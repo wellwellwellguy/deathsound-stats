@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeathSound Realtime Analytics</title>
+    <!-- Chart.js für den echten Graphen laden -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body { 
+            background-color: #0b0c10;
+            color: #ffffff; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            text-align: center;
+            max-width: 950px; 
+            width: 100%;
+            position: relative; 
+        }
+
+        .header-area {
+            margin-bottom: 35px;
+            text-align: center;
+        }
+
+        h1 { 
+            font-size: 2.6rem; 
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            line-height: 1.1;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: #8a8f98;
+            margin-top: 6px;
+        }
+
+        /* Dashboard Boxen-Grid */
+        .dashboard-grid {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: #16181e;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 22px 25px;
+            width: 280px;
+            text-align: left;
+            transition: all 0.25s ease;
+            user-select: none;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .card-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #8a8f98;
+            margin-bottom: 6px;
+        }
+
+        .card-value { 
+            font-size: 3rem; 
+            font-weight: 700; 
+            line-height: 1;
+        }
+
+        #sounds-card .card-value { color: #3ecf8e; text-shadow: 0 0 25px rgba(62, 207, 142, 0.25); }
+        #deaths-card .card-value { color: #ff4d4d; text-shadow: 0 0 25px rgba(255, 77, 77, 0.25); }
+        #pops-card .card-value { color: #ffcc00; text-shadow: 0 0 25px rgba(255, 204, 0, 0.25); }
+
+        /* Graph-Container dient als Anker für das absolute Bild */
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .chart-container {
+            background: #12141a;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 25px;
+            position: relative;
+            height: 400px;
+            width: 100%;
+            box-shadow: 0 20px 45px rgba(0,0,0,0.3);
+        }
+
+        /* Bild schwebt jetzt exakt vertikal zentriert und ist größer */
+        .side-logo {
+            position: absolute;
+            right: -320px; /* Weiter nach rechts geschoben, da das Bild größer ist */
+            top: 50%;
+            transform: translateY(-50%); /* Exakt vertikal in der Mitte ausgerichtet */
+            width: 270px; /* Größer skaliert */
+            height: auto;
+            object-fit: contain;
+            filter: none; /* Grüne Aura komplett entfernt */
+            pointer-events: none; 
+        }
+
+        .error-msg {
+            color: #ff4d4d;
+            font-family: monospace;
+            margin-top: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Umbruch für kleinere Monitore */
+        @media (max-width: 1600px) {
+            .side-logo {
+                position: static;
+                transform: none;
+                display: block;
+                margin: 30px auto 0 auto;
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="header-area">
+            <h1>Global Mod Analytics</h1>
+            <div class="subtitle">Real-time Timeline • Auto-updates every 10 seconds</div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="stat-card" id="sounds-card">
+                <div class="card-label">Played Sounds</div>
+                <div class="card-value" id="sound_count">0</div>
+            </div>
+
+            <div class="stat-card" id="deaths-card">
+                <div class="card-label">Total Deaths</div>
+                <div class="card-value" id="total_deaths">0</div>
+            </div>
+
+            <div class="stat-card" id="pops-card">
+                <div class="card-label">Total Totem Pops</div>
+                <div class="card-value" id="pops_session">0</div>
+            </div>
+        </div>
+
+        <!-- Umschließende Box für die vertikale Zentrierung -->
+        <div class="chart-wrapper">
+            <div class="chart-container">
+                <canvas id="realtimeChart"></canvas>
+            </div>
+            <!-- Bild rechts daneben, vertikal mittig und ohne Aura -->
+            <img class="side-logo" src="https://cdn.modrinth.com/data/M57SG5rk/ea0bc1e3fcb464776bad577eb2f061b2376c3095_96.webp" alt="Mod Logo">
+        </div>
+
+        <div class="error-msg" id="error"></div>
+    </div>
+
+    <script>
+        const API_URL = "https://ekhjtgcsblponrszizxn.supabase.co/rest/v1/rpc/get_all_stats";
+        const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVraGp0Z2NzYmxwb25yc3ppenhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxODIxNjUsImV4cCI6MjA5ODc1ODE2NX0.xQn5x4bIrTeirJEDJvG_tQPC-6itnCoTiWeRuwE8gt4";
+
+        let history = { labels: [], sounds: [], deaths: [] };
+
+        const ctx = document.getElementById('realtimeChart').getContext('2d');
+        const realtimeChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: history.labels,
+                datasets: [
+                    {
+                        label: 'Played Sounds',
+                        data: history.sounds,
+                        borderColor: '#3ecf8e',
+                        backgroundColor: 'rgba(62, 207, 142, 0.03)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 2
+                    },
+                    {
+                        label: 'Total Deaths',
+                        data: history.deaths,
+                        borderColor: '#ff4d4d',
+                        backgroundColor: 'rgba(255, 77, 77, 0.03)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#8a8f98', font: { size: 12, weight: 'bold' } } }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.02)' },
+                        ticks: { color: '#8a8f98', maxRotation: 0 }
+                    },
+                    y: {
+                        grid: { color: 'rgba(255, 255, 255, 0.04)' },
+                        ticks: { color: '#8a8f98' },
+                        grace: '5%' 
+                    }
+                }
+            }
+        });
+
+        function updateStats() {
+            fetch(API_URL, {
+                method: "POST",
+                headers: { 
+                    "apikey": API_KEY, 
+                    "Authorization": `Bearer ${API_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({})
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP Error: " + res.status);
+                return res.json();
+            })
+            .then(data => {
+                if (data && data[0]) {
+                    const currentSounds = data[0].sound_count ?? 0;
+                    const currentDeaths = data[0].total_deaths ?? 0;
+                    const currentPops = data[0].total_pops ?? 0; 
+
+                    document.getElementById("sound_count").innerText = currentSounds;
+                    document.getElementById("total_deaths").innerText = currentDeaths;
+                    document.getElementById("pops_session").innerText = currentPops;
+                    document.getElementById("error").innerText = ""; 
+
+                    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                    history.labels.push(now);
+                    history.sounds.push(currentSounds);
+                    history.deaths.push(currentDeaths);
+
+                    if (history.labels.length > 30) {
+                        history.labels.shift();
+                        history.sounds.shift();
+                        history.deaths.shift();
+                    }
+
+                    realtimeChart.update();
+                }
+            })
+            .catch(err => {
+                document.getElementById("error").innerText = "Connection Error: " + err.message;
+                console.error(err);
+            });
+        }
+
+        updateStats();
+        setInterval(updateStats, 10000);
+    </script>
+</body>
+</html>

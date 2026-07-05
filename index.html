@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeathSound Realtime Analytics</title>
-    <!-- Chart.js für den echten Graphen laden -->
+    <title>Death Sound Mod Statistics</title>
+    <link rel="icon" type="image/webp" href="https://cdn.modrinth.com/data/M57SG5rk/ea0bc1e3fcb464776bad577eb2f061b2376c3095_96.webp">
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
@@ -93,7 +94,6 @@
         #deaths-card .card-value { color: #ff4d4d; text-shadow: 0 0 25px rgba(255, 77, 77, 0.25); }
         #pops-card .card-value { color: #ffcc00; text-shadow: 0 0 25px rgba(255, 204, 0, 0.25); }
 
-        /* Graph-Container dient als Anker für das absolute Bild */
         .chart-wrapper {
             position: relative;
             width: 100%;
@@ -110,16 +110,15 @@
             box-shadow: 0 20px 45px rgba(0,0,0,0.3);
         }
 
-        /* Bild schwebt jetzt exakt vertikal zentriert und ist größer */
         .side-logo {
             position: absolute;
-            right: -320px; /* Weiter nach rechts geschoben, da das Bild größer ist */
+            right: -320px;
             top: 50%;
-            transform: translateY(-50%); /* Exakt vertikal in der Mitte ausgerichtet */
-            width: 270px; /* Größer skaliert */
+            transform: translateY(-50%);
+            width: 270px;
             height: auto;
             object-fit: contain;
-            filter: none; /* Grüne Aura komplett entfernt */
+            filter: none;
             pointer-events: none; 
         }
 
@@ -130,7 +129,6 @@
             font-size: 0.9rem;
         }
 
-        /* Umbruch für kleinere Monitore */
         @media (max-width: 1600px) {
             .side-logo {
                 position: static;
@@ -148,7 +146,7 @@
         
         <div class="header-area">
             <h1>Global Mod Analytics</h1>
-            <div class="subtitle">Real-time Timeline • Auto-updates every 10 seconds</div>
+            <div class="subtitle">Real-Time Statistics • Auto-updates every 10 seconds</div>
         </div>
 
         <div class="dashboard-grid">
@@ -168,12 +166,10 @@
             </div>
         </div>
 
-        <!-- Umschließende Box für die vertikale Zentrierung -->
         <div class="chart-wrapper">
             <div class="chart-container">
                 <canvas id="realtimeChart"></canvas>
             </div>
-            <!-- Bild rechts daneben, vertikal mittig und ohne Aura -->
             <img class="side-logo" src="https://cdn.modrinth.com/data/M57SG5rk/ea0bc1e3fcb464776bad577eb2f061b2376c3095_96.webp" alt="Mod Logo">
         </div>
 

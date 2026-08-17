@@ -52,9 +52,8 @@
         .dashboard-grid {
             display: flex;
             gap: 20px;
-            justify-content: center;
+            width: 100%;
             margin-bottom: 30px;
-            flex-wrap: wrap;
         }
 
         .stat-card {
@@ -62,9 +61,10 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 16px;
             padding: 22px 25px;
-            width: 280px;
+            flex: 1;
+            min-width: 0;
             text-align: left;
-            transition: all 0.25s ease;
+            transition: transform 0.25s ease, border-color 0.25s ease;
             user-select: none;
             box-shadow: 0 8px 32px rgba(0,0,0,0.2);
         }
@@ -84,14 +84,40 @@
         }
 
         .card-value { 
-            font-size: 3rem; 
+            font-size: 2.8rem; 
             font-weight: 700; 
-            line-height: 1;
+            line-height: 1em;
+            display: flex;
+            align-items: baseline;
+            height: 1em;
+            font-variant-numeric: tabular-nums;
         }
 
-        #sounds-card .card-value { color: #3ecf8e; text-shadow: 0 0 25px rgba(62, 207, 142, 0.25); }
-        #deaths-card .card-value { color: #ff4d4d; text-shadow: 0 0 25px rgba(255, 77, 77, 0.25); }
-        #pops-card .card-value { color: #ffcc00; text-shadow: 0 0 25px rgba(255, 204, 0, 0.25); }
+        .odometer-digit {
+            position: relative;
+            display: inline-block;
+            height: 1em;
+            overflow: hidden;
+            vertical-align: top;
+        }
+
+        .odometer-ribbon {
+            display: flex;
+            flex-direction: column;
+            transition: transform 4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .odometer-num {
+            height: 1em;
+            line-height: 1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #sounds-card .card-value { color: #3ecf8e; }
+        #deaths-card .card-value { color: #ff4d4d; }
+        #pops-card .card-value { color: #ffcc00; }
 
         .chart-wrapper {
             position: relative;
@@ -137,6 +163,12 @@
                 width: 200px;
             }
         }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                flex-direction: column;
+            }
+        }
     </style>
 </head>
 <body>
@@ -151,17 +183,17 @@
         <div class="dashboard-grid">
             <div class="stat-card" id="sounds-card">
                 <div class="card-label">Played Sounds</div>
-                <div class="card-value" id="sound_count">0</div>
+                <div class="card-value" id="sound_count"></div>
             </div>
 
             <div class="stat-card" id="deaths-card">
                 <div class="card-label">Total Deaths</div>
-                <div class="card-value" id="total_deaths">0</div>
+                <div class="card-value" id="total_deaths"></div>
             </div>
 
             <div class="stat-card" id="pops-card">
                 <div class="card-label">Total Totem Pops</div>
-                <div class="card-value" id="pops_session">0</div>
+                <div class="card-value" id="pops_session"></div>
             </div>
         </div>
 
@@ -178,13 +210,84 @@
     <script>
         const API_URL = "https://ekhjtgcsblponrszizxn.supabase.co/rest/v1/rpc/get_all_stats";
         const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVraGp0Z2NzYmxwb25yc3ppenhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxODIxNjUsImV4cCI6MjA5ODc1ODE2NX0.xQn5x4bIrTeirJEDJvG_tQPC-6itnCoTiWeRuwE8gt4";
-		
-		let history = {
-			labels: [],
-			sounds: [],
-			deaths: [],
-			pops: []
-		};
+        
+        let history = {
+            labels: [],
+            sounds: [],
+            deaths: [],
+            pops: []
+        };
+
+        function formatShortNumber(value) {
+            if (value >= 1000000000) {
+                return (value / 1000000000).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + 'B';
+            }
+            if (value >= 1000000) {
+                return (value / 1000000).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + 'M';
+            }
+            if (value >= 1000) {
+                return (value / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + 'K';
+            }
+            return value.toLocaleString('de-DE');
+        }
+
+        function updateOdometer(element, newValue) {
+            const formatted = Number(newValue).toLocaleString('de-DE');
+            
+            if (!element.dataset.initialized) {
+                element.innerHTML = '';
+                for (let i = 0; i < formatted.length; i++) {
+                    const char = formatted[i];
+                    if (isNaN(parseInt(char, 10))) {
+                        const span = document.createElement('span');
+                        span.innerText = char;
+                        span.style.lineHeight = "1em";
+                        element.appendChild(span);
+                    } else {
+                        const digitContainer = document.createElement('div');
+                        digitContainer.className = 'odometer-digit';
+                        const ribbon = document.createElement('div');
+                        ribbon.className = 'odometer-ribbon';
+                        for (let n = 0; n <= 9; n++) {
+                            const numDiv = document.createElement('div');
+                            numDiv.className = 'odometer-num';
+                            numDiv.innerText = n;
+                            ribbon.appendChild(numDiv);
+                        }
+                        digitContainer.appendChild(ribbon);
+                        element.appendChild(digitContainer);
+                        
+                        const targetNum = parseInt(char, 10);
+                        ribbon.style.transform = `translateY(-${targetNum * 10}%)`;
+                    }
+                }
+                element.dataset.currentValue = formatted;
+                element.dataset.initialized = "true";
+                return;
+            }
+
+            if (element.dataset.currentValue === formatted) return;
+
+            if (element.dataset.currentValue.length !== formatted.length) {
+                element.dataset.initialized = "";
+                updateOdometer(element, newValue);
+                return;
+            }
+
+            const children = element.childNodes;
+            for (let i = 0; i < formatted.length; i++) {
+                const char = formatted[i];
+                if (!isNaN(parseInt(char, 10))) {
+                    const targetNum = parseInt(char, 10);
+                    const ribbon = children[i].querySelector('.odometer-ribbon');
+                    if (ribbon) {
+                        ribbon.style.transform = `translateY(-${targetNum * 10}%)`;
+                    }
+                }
+            }
+
+            element.dataset.currentValue = formatted;
+        }
 
         const ctx = document.getElementById('realtimeChart').getContext('2d');
         const realtimeChart = new Chart(ctx, {
@@ -200,7 +303,9 @@
                         borderWidth: 3,
                         tension: 0.3,
                         fill: true,
-                        pointRadius: 2
+                        pointRadius: 3,
+                        pointHoverRadius: 3,
+                        hitRadius: 20
                     },
                     {
                         label: 'Total Deaths',
@@ -210,25 +315,47 @@
                         borderWidth: 3,
                         tension: 0.3,
                         fill: true,
-                        pointRadius: 2
+                        pointRadius: 3,
+                        pointHoverRadius: 3,
+                        hitRadius: 20
                     },
-					{
-						label: 'Total Totem Pops',
-						data: history.pops,
-						borderColor: '#ffcc00',
-						backgroundColor: 'rgba(255, 204, 0, 0.03)',
-						borderWidth: 3,
-						tension: 0.3,
-						fill: true,
-						pointRadius: 2
-					}
+                    {
+                        label: 'Total Totem Pops',
+                        data: history.pops,
+                        borderColor: '#ffcc00',
+                        backgroundColor: 'rgba(255, 204, 0, 0.03)',
+                        borderWidth: 3,
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 3,
+                        pointHoverRadius: 3,
+                        hitRadius: 20
+                    }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
                 plugins: {
-                    legend: { labels: { color: '#8a8f98', font: { size: 12, weight: 'bold' } } }
+                    legend: { labels: { color: '#8a8f98', font: { size: 12, weight: 'bold' } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += formatShortNumber(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
                 },
                 scales: {
                     x: {
@@ -236,66 +363,20 @@
                         ticks: { color: '#8a8f98', maxRotation: 0 }
                     },
                     y: {
-						grid: {
-						color: 'rgba(255, 255, 255, 0.04)'
-						},
-						ticks: {
-						color: '#8a8f98',
-						callback: function(value) {
-								if (value >= 1000000000) {
-									return (value / 1000000000).toFixed(value % 1000000000 === 0 ? 0 : 1) + 'B';
-								}
-								if (value >= 1000000) {
-									return (value / 1000000).toFixed(value % 1000000 === 0 ? 0 : 1) + 'M';
-								}
-								if (value >= 1000) {
-									return (value / 1000).toFixed(value % 1000 === 0 ? 0 : 1) + 'K';
-								}
-							return value;
-							}
-						},
-				grace: '5%'
-}
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.04)'
+                        },
+                        ticks: {
+                            color: '#8a8f98',
+                            callback: function(value) {
+                                return formatShortNumber(value);
+                            }
+                        },
+                        grace: '5%'
+                    }
                 }
             }
         });
-		
-		function formatNumber(value) {
-			if (value >= 1000000000) {
-				return (value / 1000000000).toLocaleString('de-DE', {
-				maximumFractionDigits: 1
-			}) + 'B';
-			}
-			if (value >= 1000000) {
-				return (value / 1000000).toLocaleString('de-DE', {
-					maximumFractionDigits: 1
-				}) + 'M';
-			}
-			if (value >= 1000) {
-				return (value / 1000).toLocaleString('de-DE', {
-					maximumFractionDigits: 1
-				}) + 'K';
-			}
-			return value.toLocaleString('de-DE');
-		}
-		
-		function setupHoverValue(cardId, valueId) {
-			const card = document.getElementById(cardId);
-			const value = document.getElementById(valueId);
-
-			let timeout;
-
-			card.addEventListener("mouseenter", () => {
-				timeout = setTimeout(() => {
-					value.innerText = value.dataset.full;
-				}, 250);
-			});
-
-			card.addEventListener("mouseleave", () => {
-				clearTimeout(timeout);
-				value.innerText = value.dataset.short;
-			});
-		}
 
         function updateStats() {
             fetch(API_URL, {
@@ -317,33 +398,22 @@
                     const currentDeaths = data[0].total_deaths ?? 0;
                     const currentPops = data[0].total_pops ?? 0; 
 
-					const soundEl = document.getElementById("sound_count");
-					soundEl.dataset.short = formatNumber(currentSounds);
-					soundEl.dataset.full = currentSounds.toLocaleString("de-DE");
-					soundEl.innerText = soundEl.dataset.short;
-
-					const deathEl = document.getElementById("total_deaths");
-					deathEl.dataset.short = formatNumber(currentDeaths);
-					deathEl.dataset.full = currentDeaths.toLocaleString("de-DE");
-					deathEl.innerText = deathEl.dataset.short;
-
-					const popsEl = document.getElementById("pops_session");
-					popsEl.dataset.short = formatNumber(currentPops);
-					popsEl.dataset.full = currentPops.toLocaleString("de-DE");
-					popsEl.innerText = popsEl.dataset.short;
+                    updateOdometer(document.getElementById("sound_count"), currentSounds);
+                    updateOdometer(document.getElementById("total_deaths"), currentDeaths);
+                    updateOdometer(document.getElementById("pops_session"), currentPops);
 
                     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
                     history.labels.push(now);
-					history.sounds.push(currentSounds);
-					history.deaths.push(currentDeaths);
-					history.pops.push(currentPops);
+                    history.sounds.push(currentSounds);
+                    history.deaths.push(currentDeaths);
+                    history.pops.push(currentPops);
 
                     if (history.labels.length > 30) {
                         history.labels.shift();
                         history.sounds.shift();
                         history.deaths.shift();
-						history.pops.shift();
+                        history.pops.shift();
                     }
 
                     realtimeChart.update();
@@ -356,24 +426,18 @@
         }
 
         function startAlignedUpdates() {
-		updateStats();
+            updateStats();
 
-		const now = new Date();
-	
-		const delay =
-			(10 - (now.getSeconds() % 10)) * 1000 - now.getMilliseconds();
+            const now = new Date();
+            const delay = (10 - (now.getSeconds() % 10)) * 1000 - now.getMilliseconds();
 
-		setTimeout(() => {
-			updateStats();
+            setTimeout(() => {
+                updateStats();
+                setInterval(updateStats, 10000);
+            }, delay);
+        }
 
-			setInterval(updateStats, 10000);
-		}, delay);
-		}
-
-		startAlignedUpdates();
-		setupHoverValue("sounds-card", "sound_count");
-		setupHoverValue("deaths-card", "total_deaths");
-		setupHoverValue("pops-card", "pops_session");
+        startAlignedUpdates();
     </script>
 </body>
 </html>

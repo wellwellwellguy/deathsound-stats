@@ -248,17 +248,23 @@
                         digitContainer.className = 'odometer-digit';
                         const ribbon = document.createElement('div');
                         ribbon.className = 'odometer-ribbon';
-                        for (let n = 0; n <= 9; n++) {
-                            const numDiv = document.createElement('div');
-                            numDiv.className = 'odometer-num';
-                            numDiv.innerText = n;
-                            ribbon.appendChild(numDiv);
+                        
+                        for (let cycle = 0; cycle < 2; cycle++) {
+                            for (let n = 0; n <= 9; n++) {
+                                const numDiv = document.createElement('div');
+                                numDiv.className = 'odometer-num';
+                                numDiv.innerText = n;
+                                ribbon.appendChild(numDiv);
+                            }
                         }
+                        
                         digitContainer.appendChild(ribbon);
                         element.appendChild(digitContainer);
                         
                         const targetNum = parseInt(char, 10);
-                        ribbon.style.transform = `translateY(-${targetNum * 10}%)`;
+                        ribbon.dataset.val = targetNum;
+                        ribbon.style.transition = 'none';
+                        ribbon.style.transform = `translateY(-${(targetNum / 20) * 100}%)`;
                     }
                 }
                 element.dataset.currentValue = formatted;
@@ -281,7 +287,23 @@
                     const targetNum = parseInt(char, 10);
                     const ribbon = children[i].querySelector('.odometer-ribbon');
                     if (ribbon) {
-                        ribbon.style.transform = `translateY(-${targetNum * 10}%)`;
+                        const prevNum = parseInt(ribbon.dataset.val || "0", 10);
+                        
+                        let finalIndex = targetNum;
+                        if (targetNum < prevNum) {
+                            finalIndex = targetNum + 10;
+                        }
+
+                        ribbon.style.transition = 'transform 4s cubic-bezier(0.16, 1, 0.3, 1)';
+                        ribbon.style.transform = `translateY(-${(finalIndex / 20) * 100}%)`;
+                        ribbon.dataset.val = targetNum;
+
+                        if (finalIndex >= 10) {
+                            setTimeout(() => {
+                                ribbon.style.transition = 'none';
+                                ribbon.style.transform = `translateY(-${(targetNum / 20) * 100}%)`;
+                            }, 4000);
+                        }
                     }
                 }
             }
@@ -343,6 +365,7 @@
                 plugins: {
                     legend: { labels: { color: '#8a8f98', font: { size: 12, weight: 'bold' } } },
                     tooltip: {
+                        displayColors: false,
                         callbacks: {
                             label: function(context) {
                                 let label = context.dataset.label || '';

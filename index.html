@@ -6,7 +6,6 @@
     <title>Death Sound Mod Statistics</title>
     <link rel="icon" type="image/webp" href="https://cdn.modrinth.com/data/M57SG5rk/ea0bc1e3fcb464776bad577eb2f061b2376c3095_96.webp">
     
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -21,7 +20,22 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow behind the container */
+        .ambient-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(62, 207, 142, 0.08) 0%, rgba(255, 77, 77, 0.05) 50%, rgba(0,0,0,0) 70%);
+            filter: blur(60px);
+            z-index: 0;
+            pointer-events: none;
         }
 
         .container {
@@ -29,11 +43,22 @@
             max-width: 950px; 
             width: 100%;
             position: relative; 
+            z-index: 1;
         }
 
         .header-area {
             margin-bottom: 35px;
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .mod-logo {
+            width: 96px;
+            height: 96px;
+            object-fit: contain;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
         }
 
         h1 { 
@@ -43,17 +68,11 @@
             line-height: 1.1;
         }
 
-        .subtitle {
-            font-size: 0.95rem;
-            color: #8a8f98;
-            margin-top: 6px;
-        }
-
         .dashboard-grid {
             display: flex;
             gap: 20px;
             width: 100%;
-            margin-bottom: 30px;
+            margin-bottom: 35px;
         }
 
         .stat-card {
@@ -93,75 +112,61 @@
             font-variant-numeric: tabular-nums;
         }
 
-        .odometer-digit {
-            position: relative;
-            display: inline-block;
-            height: 1em;
-            overflow: hidden;
-            vertical-align: top;
-        }
-
-        .odometer-ribbon {
-            display: flex;
-            flex-direction: column;
-            transition: transform 4s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .odometer-num {
-            height: 1em;
-            line-height: 1em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
         #sounds-card .card-value { color: #3ecf8e; }
         #deaths-card .card-value { color: #ff4d4d; }
         #pops-card .card-value { color: #ffcc00; }
 
-        .chart-wrapper {
-            position: relative;
-            width: 100%;
-        }
-
-        .chart-container {
+        /* Action Section */
+        .info-section {
             background: #12141a;
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 20px;
             padding: 25px;
-            position: relative;
-            height: 400px;
-            width: 100%;
-            box-shadow: 0 20px 45px rgba(0,0,0,0.3);
+            margin-bottom: 35px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        .side-logo {
-            position: absolute;
-            right: -320px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 270px;
+        .badge-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .badge-container a {
+            display: inline-block;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .badge-container a:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        .badge-container img {
+            display: block;
             height: auto;
-            object-fit: contain;
-            filter: none;
-            pointer-events: none; 
         }
 
-        .error-msg {
-            color: #ff4d4d;
-            font-family: monospace;
-            margin-top: 20px;
-            font-size: 0.9rem;
+        .footer {
+            color: #5a5e67;
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
         }
 
-        @media (max-width: 1600px) {
-            .side-logo {
-                position: static;
-                transform: none;
-                display: block;
-                margin: 30px auto 0 auto;
-                width: 200px;
-            }
+        .footer a {
+            color: #8a8f98;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .footer a:hover {
+            color: #ffffff;
         }
 
         @media (max-width: 768px) {
@@ -173,294 +178,52 @@
 </head>
 <body>
 
+    <div class="ambient-glow"></div>
+
     <div class="container">
         
         <div class="header-area">
+            <img class="mod-logo" src="https://cdn.modrinth.com/data/M57SG5rk/ea0bc1e3fcb464776bad577eb2f061b2376c3095_96.webp" alt="Mod Logo">
             <h1>Death Sound Mod Statistics</h1>
-            <div class="subtitle">Auto-updates every 10 seconds</div>
         </div>
 
         <div class="dashboard-grid">
             <div class="stat-card" id="sounds-card">
                 <div class="card-label">Played Sounds</div>
-                <div class="card-value" id="sound_count"></div>
+                <div class="card-value" id="sound_count">3,3M+</div>
             </div>
 
             <div class="stat-card" id="deaths-card">
                 <div class="card-label">Total Deaths</div>
-                <div class="card-value" id="total_deaths"></div>
+                <div class="card-value" id="total_deaths">5M+</div>
             </div>
 
             <div class="stat-card" id="pops-card">
                 <div class="card-label">Total Totem Pops</div>
-                <div class="card-value" id="pops_session"></div>
+                <div class="card-value" id="pops_session">7,1M+</div>
             </div>
         </div>
 
-        <div class="chart-wrapper">
-            <div class="chart-container">
-                <canvas id="realtimeChart"></canvas>
+        <div class="info-section">
+            <div class="badge-container">
+                <a href="https://modrinth.com/mod/death-sound-mod">
+                    <img src="https://wsrv.nl/?url=https%3A%2F%2Fcdn.jsdelivr.net%2Fnpm%2F%40intergrav%2Fdevins-badges%403%2Fassets%2Fcozy%2Favailable%2Fmodrinth_vector.svg&n=-1" alt="Modrinth" width="160">
+                </a>
+                <a href="https://www.curseforge.com/minecraft/mc-mods/death-sound-mod">
+                    <img src="https://wsrv.nl/?url=https%3A%2F%2Fcdn.jsdelivr.net%2Fnpm%2F%40intergrav%2Fdevins-badges%403%2Fassets%2Fcozy%2Favailable%2Fcurseforge_vector.svg&n=-1" alt="CurseForge" width="167">
+                </a>
             </div>
-            <img class="side-logo" src="https://cdn.modrinth.com/data/M57SG5rk/ea0bc1e3fcb464776bad577eb2f061b2376c3095_96.webp" alt="Mod Logo">
         </div>
 
-        <div class="error-msg" id="error"></div>
+        <div class="footer">
+            <a href="https://modrinth.com/mod/death-sound-mod" target="_blank">Modrinth</a>
+            <span>•</span>
+            <a href="https://www.curseforge.com/minecraft/mc-mods/death-sound-mod" target="_blank">CurseForge</a>
+            <span>•</span>
+            <a href="https://github.com/wellwellwellguy/Death-Sound-Mod/issues" target="_blank">GitHub</a>
+        </div>
+
     </div>
 
-    <script>
-        const API_URL = "https://ekhjtgcsblponrszizxn.supabase.co/rest/v1/rpc/get_all_stats";
-        const API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVraGp0Z2NzYmxwb25yc3ppenhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxODIxNjUsImV4cCI6MjA5ODc1ODE2NX0.xQn5x4bIrTeirJEDJvG_tQPC-6itnCoTiWeRuwE8gt4";
-        
-        let history = {
-            labels: [],
-            sounds: [],
-            deaths: [],
-            pops: []
-        };
-
-        function formatShortNumber(value) {
-            if (value >= 1000000000) {
-                return (value / 1000000000).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + 'B';
-            }
-            if (value >= 1000000) {
-                return (value / 1000000).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + 'M';
-            }
-            if (value >= 1000) {
-                return (value / 1000).toLocaleString('de-DE', { maximumFractionDigits: 2 }) + 'K';
-            }
-            return value.toLocaleString('de-DE');
-        }
-
-        function updateOdometer(element, newValue) {
-            const formatted = Number(newValue).toLocaleString('de-DE');
-            
-            if (!element.dataset.initialized) {
-                element.innerHTML = '';
-                for (let i = 0; i < formatted.length; i++) {
-                    const char = formatted[i];
-                    if (isNaN(parseInt(char, 10))) {
-                        const span = document.createElement('span');
-                        span.innerText = char;
-                        span.style.lineHeight = "1em";
-                        element.appendChild(span);
-                    } else {
-                        const digitContainer = document.createElement('div');
-                        digitContainer.className = 'odometer-digit';
-                        const ribbon = document.createElement('div');
-                        ribbon.className = 'odometer-ribbon';
-                        
-                        for (let cycle = 0; cycle < 2; cycle++) {
-                            for (let n = 0; n <= 9; n++) {
-                                const numDiv = document.createElement('div');
-                                numDiv.className = 'odometer-num';
-                                numDiv.innerText = n;
-                                ribbon.appendChild(numDiv);
-                            }
-                        }
-                        
-                        digitContainer.appendChild(ribbon);
-                        element.appendChild(digitContainer);
-                        
-                        const targetNum = parseInt(char, 10);
-                        ribbon.dataset.val = targetNum;
-                        ribbon.style.transition = 'none';
-                        ribbon.style.transform = `translateY(-${(targetNum / 20) * 100}%)`;
-                    }
-                }
-                element.dataset.currentValue = formatted;
-                element.dataset.initialized = "true";
-                return;
-            }
-
-            if (element.dataset.currentValue === formatted) return;
-
-            if (element.dataset.currentValue.length !== formatted.length) {
-                element.dataset.initialized = "";
-                updateOdometer(element, newValue);
-                return;
-            }
-
-            const children = element.childNodes;
-            for (let i = 0; i < formatted.length; i++) {
-                const char = formatted[i];
-                if (!isNaN(parseInt(char, 10))) {
-                    const targetNum = parseInt(char, 10);
-                    const ribbon = children[i].querySelector('.odometer-ribbon');
-                    if (ribbon) {
-                        const prevNum = parseInt(ribbon.dataset.val || "0", 10);
-                        
-                        let finalIndex = targetNum;
-                        if (targetNum < prevNum) {
-                            finalIndex = targetNum + 10;
-                        }
-
-                        ribbon.style.transition = 'transform 4s cubic-bezier(0.16, 1, 0.3, 1)';
-                        ribbon.style.transform = `translateY(-${(finalIndex / 20) * 100}%)`;
-                        ribbon.dataset.val = targetNum;
-
-                        if (finalIndex >= 10) {
-                            setTimeout(() => {
-                                ribbon.style.transition = 'none';
-                                ribbon.style.transform = `translateY(-${(targetNum / 20) * 100}%)`;
-                            }, 4000);
-                        }
-                    }
-                }
-            }
-
-            element.dataset.currentValue = formatted;
-        }
-
-        const ctx = document.getElementById('realtimeChart').getContext('2d');
-        const realtimeChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: history.labels,
-                datasets: [
-                    {
-                        label: 'Played Sounds',
-                        data: history.sounds,
-                        borderColor: '#3ecf8e',
-                        backgroundColor: 'rgba(62, 207, 142, 0.03)',
-                        borderWidth: 3,
-                        tension: 0.3,
-                        fill: true,
-                        pointRadius: 3,
-                        pointHoverRadius: 3,
-                        hitRadius: 20
-                    },
-                    {
-                        label: 'Total Deaths',
-                        data: history.deaths,
-                        borderColor: '#ff4d4d',
-                        backgroundColor: 'rgba(255, 77, 77, 0.03)',
-                        borderWidth: 3,
-                        tension: 0.3,
-                        fill: true,
-                        pointRadius: 3,
-                        pointHoverRadius: 3,
-                        hitRadius: 20
-                    },
-                    {
-                        label: 'Total Totem Pops',
-                        data: history.pops,
-                        borderColor: '#ffcc00',
-                        backgroundColor: 'rgba(255, 204, 0, 0.03)',
-                        borderWidth: 3,
-                        tension: 0.3,
-                        fill: true,
-                        pointRadius: 3,
-                        pointHoverRadius: 3,
-                        hitRadius: 20
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
-                },
-                plugins: {
-                    legend: { labels: { color: '#8a8f98', font: { size: 12, weight: 'bold' } } },
-                    tooltip: {
-                        displayColors: false,
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
-                                if (context.parsed.y !== null) {
-                                    label += formatShortNumber(context.parsed.y);
-                                }
-                                return label;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: { color: 'rgba(255, 255, 255, 0.02)' },
-                        ticks: { color: '#8a8f98', maxRotation: 0 }
-                    },
-                    y: {
-                        grid: {
-                            color: 'rgba(255, 255, 255, 0.04)'
-                        },
-                        ticks: {
-                            color: '#8a8f98',
-                            callback: function(value) {
-                                return formatShortNumber(value);
-                            }
-                        },
-                        grace: '5%'
-                    }
-                }
-            }
-        });
-
-        function updateStats() {
-            fetch(API_URL, {
-                method: "POST",
-                headers: { 
-                    "apikey": API_KEY, 
-                    "Authorization": `Bearer ${API_KEY}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({})
-            })
-            .then(res => {
-                if (!res.ok) throw new Error("HTTP Error: " + res.status);
-                return res.json();
-            })
-            .then(data => {
-                if (data && data[0]) {
-                    const currentSounds = data[0].sound_count ?? 0;
-                    const currentDeaths = data[0].total_deaths ?? 0;
-                    const currentPops = data[0].total_pops ?? 0; 
-
-                    updateOdometer(document.getElementById("sound_count"), currentSounds);
-                    updateOdometer(document.getElementById("total_deaths"), currentDeaths);
-                    updateOdometer(document.getElementById("pops_session"), currentPops);
-
-                    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-                    history.labels.push(now);
-                    history.sounds.push(currentSounds);
-                    history.deaths.push(currentDeaths);
-                    history.pops.push(currentPops);
-
-                    if (history.labels.length > 30) {
-                        history.labels.shift();
-                        history.sounds.shift();
-                        history.deaths.shift();
-                        history.pops.shift();
-                    }
-
-                    realtimeChart.update();
-                }
-            })
-            .catch(err => {
-                document.getElementById("error").innerText = "Connection Error: " + err.message;
-                console.error(err);
-            });
-        }
-
-        function startAlignedUpdates() {
-            updateStats();
-
-            const now = new Date();
-            const delay = (10 - (now.getSeconds() % 10)) * 1000 - now.getMilliseconds();
-
-            setTimeout(() => {
-                updateStats();
-                setInterval(updateStats, 10000);
-            }, delay);
-        }
-
-        startAlignedUpdates();
-    </script>
 </body>
 </html>
